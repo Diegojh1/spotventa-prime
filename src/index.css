@@ -2,41 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* SpotVenta Design System - Real Estate Platform */
 
 @layer base {
   :root {
+    /* Primary Brand Colors */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 218 11% 15%;
 
+    /* SpotVenta Brand Colors */
+    --primary: 221 83% 53%; /* #2563eb - Idealista inspired blue */
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 221 83% 60%;
+    --primary-dark: 221 83% 46%;
+
+    /* Accent Colors */
+    --accent-lime: 82 84% 67%; /* #84cc16 - Bright lime for CTAs */
+    --accent-lime-foreground: 0 0% 0%;
+    --accent-pink: 326 78% 53%; /* #e11d48 - Pink for special highlights */
+    --accent-pink-foreground: 0 0% 100%;
+
+    /* Neutral Palette */
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 218 11% 15%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 218 11% 15%;
+
+    /* Surface Colors */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
+    --card-foreground: 218 11% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 218 11% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Interactive Elements */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 221 83% 53%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Status Colors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(var(--accent-lime)), hsl(var(--accent-lime) / 0.8));
+    --gradient-card: linear-gradient(145deg, hsl(var(--background)), hsl(var(--muted)));
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-light)));
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Shadows */
+    --shadow-card: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow-card-hover: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
+    --shadow-hero: 0 10px 25px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
+    /* Layout */
+    --radius: 0.75rem;
+    --radius-sm: 0.5rem;
+    --radius-lg: 1rem;
 
     --sidebar-background: 0 0% 98%;
 
