@@ -84,7 +84,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     try {
       const redirectUrl = `${window.location.origin}/`;
       
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
@@ -115,9 +115,27 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
         return;
       }
 
+      // If user is created successfully, create profile manually if trigger doesn't work
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            email: formData.email,
+            full_name: formData.fullName,
+            user_type: formData.userType,
+            company_name: formData.companyName,
+            phone: formData.phone
+          });
+
+        if (profileError && !profileError.message.includes('duplicate key')) {
+          console.error('Error creating profile:', profileError);
+        }
+      }
+
       toast({
         title: "¡Registro exitoso!",
-        description: "Revisa tu email para confirmar tu cuenta"
+        description: "Tu cuenta se ha creado correctamente"
       });
       
       onSuccess?.();

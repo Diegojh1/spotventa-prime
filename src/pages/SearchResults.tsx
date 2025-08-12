@@ -19,14 +19,18 @@ export function SearchResults({ user }: SearchResultsProps) {
   const [properties, setProperties] = useState<Property[]>([]);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [sortBy, setSortBy] = useState('relevance');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const ITEMS_PER_PAGE = 20;
 
   const filters: SearchFilters = {
     query: searchParams.get('q') || '',
     category: (searchParams.get('category') as 'sale' | 'rent') || undefined,
-    property_type: searchParams.get('property_type') || '',
+    property_type: searchParams.get('property_type') || undefined,
     minPrice: searchParams.get('minPrice') ? parseInt(searchParams.get('minPrice')!) : undefined,
     maxPrice: searchParams.get('maxPrice') ? parseInt(searchParams.get('maxPrice')!) : undefined,
     bedrooms: searchParams.get('bedrooms') ? parseInt(searchParams.get('bedrooms')!) : undefined,
@@ -34,6 +38,8 @@ export function SearchResults({ user }: SearchResultsProps) {
   };
 
   useEffect(() => {
+    setCurrentPage(1);
+    setHasMore(true);
     loadProperties();
     if (user) {
       loadFavorites();
@@ -49,31 +55,35 @@ export function SearchResults({ user }: SearchResultsProps) {
         .eq('is_active', true);
 
       // Apply filters
-      if (filters.query) {
+      if (filters.query && filters.query.trim()) {
         query = query.or(`title.ilike.%${filters.query}%,address.ilike.%${filters.query}%,city.ilike.%${filters.query}%`);
       }
       
+      // Asegurar que siempre se aplique el filtro de categoría
       if (filters.category) {
         query = query.eq('category', filters.category);
+      } else {
+        // Si no hay categoría seleccionada, mostrar solo venta por defecto
+        query = query.eq('category', 'sale');
       }
       
-      if (filters.property_type) {
+      if (filters.property_type && filters.property_type.trim() && filters.property_type !== 'all') {
         query = query.eq('property_type', filters.property_type);
       }
       
-      if (filters.city) {
+      if (filters.city && filters.city.trim()) {
         query = query.ilike('city', `%${filters.city}%`);
       }
       
-      if (filters.minPrice) {
+      if (filters.minPrice && filters.minPrice > 0) {
         query = query.gte('price', filters.minPrice);
       }
       
-      if (filters.maxPrice) {
+      if (filters.maxPrice && filters.maxPrice > 0) {
         query = query.lte('price', filters.maxPrice);
       }
       
-      if (filters.bedrooms) {
+      if (filters.bedrooms && filters.bedrooms > 0) {
         query = query.gte('bedrooms', filters.bedrooms);
       }
 
@@ -95,12 +105,13 @@ export function SearchResults({ user }: SearchResultsProps) {
           query = query.order('is_featured', { ascending: false }).order('created_at', { ascending: false });
       }
 
-      const { data, error, count } = await query.limit(20);
+      const { data, error, count } = await query.range(0, ITEMS_PER_PAGE - 1);
 
       if (error) throw error;
 
       setProperties(data || []);
       setTotalCount(count || 0);
+      setHasMore((count || 0) > ITEMS_PER_PAGE);
     } catch (error) {
       console.error('Error loading properties:', error);
     } finally {
@@ -108,11 +119,93 @@ export function SearchResults({ user }: SearchResultsProps) {
     }
   };
 
+  const loadMoreProperties = async () => {
+    if (isLoadingMore || !hasMore) return;
+    
+    setIsLoadingMore(true);
+    try {
+      let query = supabase
+        .from('properties')
+        .select('*')
+        .eq('is_active', true);
+
+      // Apply same filters
+      if (filters.query && filters.query.trim()) {
+        query = query.or(`title.ilike.%${filters.query}%,address.ilike.%${filters.query}%,city.ilike.%${filters.query}%`);
+      }
+      
+      // Asegurar que siempre se aplique el filtro de categoría
+      if (filters.category) {
+        query = query.eq('category', filters.category);
+      } else {
+        // Si no hay categoría seleccionada, mostrar solo venta por defecto
+        query = query.eq('category', 'sale');
+      }
+      
+      if (filters.property_type && filters.property_type.trim() && filters.property_type !== 'all') {
+        query = query.eq('property_type', filters.property_type);
+      }
+      
+      if (filters.city && filters.city.trim()) {
+        query = query.ilike('city', `%${filters.city}%`);
+      }
+      
+      if (filters.minPrice && filters.minPrice > 0) {
+        query = query.gte('price', filters.minPrice);
+      }
+      
+      if (filters.maxPrice && filters.maxPrice > 0) {
+        query = query.lte('price', filters.maxPrice);
+      }
+      
+      if (filters.bedrooms && filters.bedrooms > 0) {
+        query = query.gte('bedrooms', filters.bedrooms);
+      }
+
+      // Apply same sorting
+      switch (sortBy) {
+        case 'price-asc':
+          query = query.order('price', { ascending: true });
+          break;
+        case 'price-desc':
+          query = query.order('price', { ascending: false });
+          break;
+        case 'newest':
+          query = query.order('created_at', { ascending: false });
+          break;
+        case 'area-desc':
+          query = query.order('area_m2', { ascending: false });
+          break;
+        default:
+          query = query.order('is_featured', { ascending: false }).order('created_at', { ascending: false });
+      }
+
+      const from = currentPage * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+      
+      const { data, error } = await query.range(from, to);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setProperties(prev => [...prev, ...data]);
+        setCurrentPage(prev => prev + 1);
+        setHasMore(data.length === ITEMS_PER_PAGE);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('Error loading more properties:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
   const loadFavorites = async () => {
     if (!user) return;
     
     const { data } = await supabase
-      .from('favorites')
+      .from('property_favorites')
       .select('property_id')
       .eq('user_id', user.id);
 
@@ -250,10 +343,15 @@ export function SearchResults({ user }: SearchResultsProps) {
         )}
 
         {/* Load More */}
-        {properties.length > 0 && properties.length < totalCount && (
+        {properties.length > 0 && hasMore && (
           <div className="text-center mt-12">
-            <Button variant="outline" size="lg">
-              Cargar más propiedades
+            <Button 
+              variant="outline" 
+              size="lg" 
+              onClick={loadMoreProperties}
+              disabled={isLoadingMore}
+            >
+              {isLoadingMore ? 'Cargando...' : 'Cargar más propiedades'}
             </Button>
           </div>
         )}

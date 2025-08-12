@@ -129,3 +129,81 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Estilos específicos para el mapa */
+.map-container {
+  height: calc(100vh - 5rem);
+  width: 100%;
+  overflow: hidden;
+}
+
+.map-sidebar {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Prevenir scroll del body cuando estamos en el mapa */
+body.map-page {
+  overflow: hidden;
+}
+
+/* Asegurar que el navbar esté por encima del mapa */
+nav {
+  z-index: 50 !important;
+}
+
+/* Contenedor del mapa */
+.map-container {
+  z-index: 0 !important;
+}
+
+/* Herramientas de dibujo */
+.leaflet-draw-toolbar {
+  z-index: 1000 !important;
+}
+
+/* Asegurar que el mapa ocupe todo el espacio disponible */
+.leaflet-container {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+/* Evitar que los toasts causen desplazamientos */
+[data-radix-toast-viewport] {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  z-index: 9999 !important;
+}
+
+/* Mejorar la apariencia de los controles de dibujo */
+.leaflet-draw-toolbar .leaflet-draw-draw-rectangle {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>') !important;
+}
+
+.leaflet-draw-toolbar .leaflet-draw-draw-polygon {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/></svg>') !important;
+}
+
+.leaflet-draw-toolbar .leaflet-draw-draw-circle {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>') !important;
+}
+
+/* Asegurar que los iconos de dibujo sean visibles */
+.leaflet-draw-toolbar a {
+  background-color: white !important;
+  border: 2px solid rgba(0,0,0,0.2) !important;
+}
+
+.leaflet-draw-toolbar a:hover {
+  background-color: #f4f4f4 !important;
+  border-color: rgba(0,0,0,0.3) !important;
+}
+
+.leaflet-draw-toolbar a.leaflet-draw-draw-rectangle,
+.leaflet-draw-toolbar a.leaflet-draw-draw-polygon,
+.leaflet-draw-toolbar a.leaflet-draw-draw-circle {
+  background-size: 16px 16px !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}

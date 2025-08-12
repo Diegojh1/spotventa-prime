@@ -20,7 +20,7 @@ export function SearchBar({ variant = 'compact', onSearch, className }: SearchBa
   const [filters, setFilters] = useState<SearchFilters>({
     query: searchParams.get('q') || '',
     category: (searchParams.get('category') as 'sale' | 'rent') || 'sale',
-    property_type: searchParams.get('property_type') || '',
+    property_type: searchParams.get('property_type') || 'all',
     minPrice: searchParams.get('minPrice') ? parseInt(searchParams.get('minPrice')!) : undefined,
     maxPrice: searchParams.get('maxPrice') ? parseInt(searchParams.get('maxPrice')!) : undefined,
     bedrooms: searchParams.get('bedrooms') ? parseInt(searchParams.get('bedrooms')!) : undefined,
@@ -31,7 +31,7 @@ export function SearchBar({ variant = 'compact', onSearch, className }: SearchBa
     const params = new URLSearchParams();
     
     Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== '' && value !== null) {
+      if (value !== undefined && value !== '' && value !== null && value !== 'all' && value !== 'any') {
         params.set(key, value.toString());
       }
     });
@@ -89,17 +89,22 @@ export function SearchBar({ variant = 'compact', onSearch, className }: SearchBa
             </div>
 
             {/* Property Type */}
-            <Select value={filters.property_type} onValueChange={(value) => updateFilter('property_type', value)}>
+            <Select value={filters.property_type || 'all'} onValueChange={(value) => updateFilter('property_type', value === 'all' ? '' : value)}>
               <SelectTrigger className="md:w-48 bg-background">
                 <SelectValue placeholder="Tipo de propiedad" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los tipos</SelectItem>
-                <SelectItem value="apartment">Apartamento</SelectItem>
-                <SelectItem value="house">Casa</SelectItem>
-                <SelectItem value="penthouse">Ático</SelectItem>
-                <SelectItem value="studio">Estudio</SelectItem>
-                <SelectItem value="office">Oficina</SelectItem>
+                <SelectItem value="all">Todos los tipos</SelectItem>
+                <SelectItem value="Apartamento">Apartamento</SelectItem>
+                <SelectItem value="Casa">Casa</SelectItem>
+                <SelectItem value="Ático">Ático</SelectItem>
+                <SelectItem value="Estudio">Estudio</SelectItem>
+                <SelectItem value="Oficina">Oficina</SelectItem>
+                <SelectItem value="Dúplex">Dúplex</SelectItem>
+                <SelectItem value="Chalet">Chalet</SelectItem>
+                <SelectItem value="Casa adosada">Casa adosada</SelectItem>
+                <SelectItem value="Casa independiente">Casa independiente</SelectItem>
+                <SelectItem value="Loft">Loft</SelectItem>
               </SelectContent>
             </Select>
 
@@ -136,12 +141,12 @@ export function SearchBar({ variant = 'compact', onSearch, className }: SearchBa
           {/* Extended Filters */}
           {showFilters && (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-4 border-t border-border">
-              <Select value={filters.bedrooms?.toString() || ''} onValueChange={(value) => updateFilter('bedrooms', value ? parseInt(value) : undefined)}>
+              <Select value={filters.bedrooms?.toString() || 'any'} onValueChange={(value) => updateFilter('bedrooms', value === 'any' ? undefined : parseInt(value))}>
                 <SelectTrigger className="bg-background">
                   <SelectValue placeholder="Habitaciones" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Cualquiera</SelectItem>
+                  <SelectItem value="any">Cualquiera</SelectItem>
                   <SelectItem value="1">1+</SelectItem>
                   <SelectItem value="2">2+</SelectItem>
                   <SelectItem value="3">3+</SelectItem>

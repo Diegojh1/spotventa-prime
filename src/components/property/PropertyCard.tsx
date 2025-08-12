@@ -8,6 +8,7 @@ import { Property } from '@/types/property';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { PropertyInquiry } from './PropertyInquiry';
 
 interface PropertyCardProps {
   property: Property;
@@ -47,7 +48,7 @@ export function PropertyCard({ property, user, isFavorite = false, onFavoriteCha
     try {
       if (isFavorite) {
         const { error } = await supabase
-          .from('favorites')
+          .from('property_favorites')
           .delete()
           .eq('user_id', user.id)
           .eq('property_id', property.id);
@@ -56,7 +57,7 @@ export function PropertyCard({ property, user, isFavorite = false, onFavoriteCha
         onFavoriteChange?.(property.id, false);
       } else {
         const { error } = await supabase
-          .from('favorites')
+          .from('property_favorites')
           .insert({
             user_id: user.id,
             property_id: property.id
@@ -187,6 +188,17 @@ export function PropertyCard({ property, user, isFavorite = false, onFavoriteCha
                     </Button>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Inquiry Button */}
+            {user && (
+              <div className="pt-2">
+                <PropertyInquiry 
+                  propertyId={property.id} 
+                  propertyTitle={property.title}
+                  user={user}
+                />
               </div>
             )}
           </div>

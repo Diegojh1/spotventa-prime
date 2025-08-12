@@ -8,12 +8,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Heart, Share2, Phone, Mail, MapPin, Bed, Bath, Square, 
   Car, Calendar, Zap, ChevronLeft, ChevronRight, 
-  ArrowLeft, Eye, Star
+  ArrowLeft, Eye, Star, MessageSquare
 } from 'lucide-react';
 import { Property } from '@/types/property';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { PropertyComments } from '@/components/property/PropertyComments';
+
+import { DirectChat } from '@/components/property/DirectChat';
 
 interface PropertyDetailProps {
   user?: any;
@@ -72,6 +75,26 @@ export function PropertyDetail({ user }: PropertyDetailProps) {
           .update({ views_count: (currentProperty.views_count || 0) + 1 })
           .eq('id', id);
       }
+
+      // Register view in property_views table if user is logged in
+      if (user) {
+        console.log('Registering view for user:', user.id, 'property:', id);
+        const { data, error } = await supabase
+          .from('property_views')
+          .upsert({
+            user_id: user.id,
+            property_id: id,
+            viewed_at: new Date().toISOString()
+          }, {
+            onConflict: 'property_id,user_id'
+          });
+        
+        if (error) {
+          console.error('Error registering view:', error);
+        } else {
+          console.log('View registered successfully:', data);
+        }
+      }
     } catch (error) {
       console.error('Error updating views:', error);
     }
@@ -81,7 +104,7 @@ export function PropertyDetail({ user }: PropertyDetailProps) {
     if (!user || !id) return;
     
     const { data } = await supabase
-      .from('favorites')
+      .from('property_favorites')
       .select('id')
       .eq('user_id', user.id)
       .eq('property_id', id)
@@ -105,7 +128,7 @@ export function PropertyDetail({ user }: PropertyDetailProps) {
     try {
       if (isFavorite) {
         await supabase
-          .from('favorites')
+          .from('property_favorites')
           .delete()
           .eq('user_id', user.id)
           .eq('property_id', id);
@@ -113,7 +136,7 @@ export function PropertyDetail({ user }: PropertyDetailProps) {
         toast({ title: "Eliminado de favoritos" });
       } else {
         await supabase
-          .from('favorites')
+          .from('property_favorites')
           .insert({
             user_id: user.id,
             property_id: id
@@ -448,6 +471,21 @@ export function PropertyDetail({ user }: PropertyDetailProps) {
                       </a>
                     </Button>
                   )}
+                  {user && user.id !== property.user_id && (
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => {
+                        // Scroll to chat section
+                        document.getElementById('direct-chat')?.scrollIntoView({ 
+                          behavior: 'smooth' 
+                        });
+                      }}
+                    >
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      Chatear con vendedor
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -472,8 +510,20 @@ export function PropertyDetail({ user }: PropertyDetailProps) {
                 </div>
               </CardContent>
             </Card>
+
+
+
+            {/* Chat */}
+            <div id="direct-chat">
+              <DirectChat propertyId={id!} user={user} />
+            </div>
           </div>
         </div>
+
+        {/* Comments Section */}
+               <div className="mt-12 space-y-6">
+         <PropertyComments propertyId={id!} user={user} />
+       </div>
       </div>
     </div>
   );

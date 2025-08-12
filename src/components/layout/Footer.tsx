@@ -12,10 +12,12 @@ export function Footer() {
           {/* Company Info */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              <div className="bg-gradient-primary rounded-lg p-2">
-                <span className="text-primary-foreground font-bold text-xl">SV</span>
-              </div>
-              <span className="text-xl font-bold text-primary">SpotVenta</span>
+              <img 
+                src="/LogoSolo.png" 
+                alt="SpotVenta Logo" 
+                className="h-8 w-auto"
+              />
+              <span className="text-xl font-bold text-black">SpotVenta</span>
             </div>
             <p className="text-muted-foreground text-sm leading-relaxed">
               La plataforma líder en España para comprar, vender y alquilar propiedades. 
