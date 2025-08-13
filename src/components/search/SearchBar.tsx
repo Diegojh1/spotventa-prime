@@ -1,187 +1,137 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
-import { Search, SlidersHorizontal } from 'lucide-react';
-import { SearchFilters } from '@/types/property';
+import { 
+  Search, 
+  Home
+} from 'lucide-react';
 
-interface SearchBarProps {
-  variant?: 'hero' | 'compact';
-  onSearch?: (filters: SearchFilters) => void;
-  className?: string;
+interface SearchFilters {
+  query: string;
+  category: 'sale' | 'rent';
+  property_type: string;
+  maxPrice?: number;
+  city?: string;
 }
 
-export function SearchBar({ variant = 'compact', onSearch, className }: SearchBarProps) {
-  const [searchParams] = useSearchParams();
+interface SearchBarProps {
+  className?: string;
+  variant?: 'default' | 'hero';
+}
+
+export default function SearchBar({ className = '', variant = 'default' }: SearchBarProps) {
   const navigate = useNavigate();
-  const [showFilters, setShowFilters] = useState(false);
+  const [searchParams] = useSearchParams();
+  
   const [filters, setFilters] = useState<SearchFilters>({
     query: searchParams.get('q') || '',
     category: (searchParams.get('category') as 'sale' | 'rent') || 'sale',
-    property_type: searchParams.get('property_type') || 'all',
-    minPrice: searchParams.get('minPrice') ? parseInt(searchParams.get('minPrice')!) : undefined,
-    maxPrice: searchParams.get('maxPrice') ? parseInt(searchParams.get('maxPrice')!) : undefined,
-    bedrooms: searchParams.get('bedrooms') ? parseInt(searchParams.get('bedrooms')!) : undefined,
-    city: searchParams.get('city') || '',
+    property_type: searchParams.get('type') || ''
   });
-
-  const handleSearch = () => {
-    const params = new URLSearchParams();
-    
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== '' && value !== null && value !== 'all' && value !== 'any') {
-        params.set(key, value.toString());
-      }
-    });
-
-    if (onSearch) {
-      onSearch(filters);
-    } else {
-      navigate(`/search?${params.toString()}`);
-    }
-  };
 
   const updateFilter = (key: keyof SearchFilters, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
-  const isHero = variant === 'hero';
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (filters.query) params.set('q', filters.query);
+    if (filters.category) params.set('category', filters.category);
+    if (filters.property_type) params.set('type', filters.property_type);
+    if (filters.maxPrice) params.set('maxPrice', filters.maxPrice.toString());
+
+    navigate(`/search?${params.toString()}`);
+  };
 
   return (
-    <Card className={`${className} ${isHero ? 'bg-gradient-hero shadow-hero' : 'bg-background shadow-card'}`}>
-      <CardContent className={`${isHero ? 'p-8' : 'p-4'}`}>
-        {isHero && (
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-foreground mb-4">
-              Tu casa es donde están tus libros
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Encuentra tu hogar ideal entre miles de propiedades en España
-            </p>
-          </div>
-        )}
+    <div className={`relative ${className}`}>
+      <div className="max-w-6xl mx-auto">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+          {/* Barra de búsqueda principal - Siempre visible */}
+          <div className="p-6">
+            <div className="flex items-center gap-4">
+              {/* Logo SPOTVENTA */}
+              <div className="flex items-center gap-2">
+                <img src="/LogoSolo.png" alt="SpotVenta" className="h-8 w-8" />
+                <span className="text-xl font-bold text-black">SpotVenta</span>
+              </div>
 
-        <div className="space-y-4">
-          {/* Main Search Controls */}
-          <div className="flex flex-col md:flex-row gap-3">
-            {/* Transaction Type */}
-            <div className="flex bg-background rounded-lg p-1 min-w-fit">
-              <Button
-                type="button"
-                variant={filters.category === 'sale' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => updateFilter('category', 'sale')}
-                className="rounded-md"
+              {/* Campo: Comprar/Alquilar */}
+              <Select 
+                value={filters.category} 
+                onValueChange={(value) => updateFilter('category', value)}
               >
-                Comprar
-              </Button>
-              <Button
-                type="button"
-                variant={filters.category === 'rent' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => updateFilter('category', 'rent')}
-                className="rounded-md"
-              >
-                Alquilar
-              </Button>
-            </div>
-
-            {/* Property Type */}
-            <Select value={filters.property_type || 'all'} onValueChange={(value) => updateFilter('property_type', value === 'all' ? '' : value)}>
-              <SelectTrigger className="md:w-48 bg-background">
-                <SelectValue placeholder="Tipo de propiedad" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los tipos</SelectItem>
-                <SelectItem value="Apartamento">Apartamento</SelectItem>
-                <SelectItem value="Casa">Casa</SelectItem>
-                <SelectItem value="Ático">Ático</SelectItem>
-                <SelectItem value="Estudio">Estudio</SelectItem>
-                <SelectItem value="Oficina">Oficina</SelectItem>
-                <SelectItem value="Dúplex">Dúplex</SelectItem>
-                <SelectItem value="Chalet">Chalet</SelectItem>
-                <SelectItem value="Casa adosada">Casa adosada</SelectItem>
-                <SelectItem value="Casa independiente">Casa independiente</SelectItem>
-                <SelectItem value="Loft">Loft</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Location Search */}
-            <div className="flex-1 relative">
-              <Input
-                type="text"
-                placeholder="Barrio, ciudad, zona, metro..."
-                value={filters.query}
-                onChange={(e) => updateFilter('query', e.target.value)}
-                className="bg-background pr-12"
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              />
-            </div>
-
-            {/* Filters Toggle */}
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => setShowFilters(!showFilters)}
-              className="bg-background"
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-            </Button>
-
-            {/* Search Button */}
-            <Button onClick={handleSearch} className="bg-accent-pink hover:bg-accent-pink/90 text-accent-pink-foreground px-8">
-              <Search className="h-4 w-4 mr-2" />
-              Buscar
-            </Button>
-          </div>
-
-          {/* Extended Filters */}
-          {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-4 border-t border-border">
-              <Select value={filters.bedrooms?.toString() || 'any'} onValueChange={(value) => updateFilter('bedrooms', value === 'any' ? undefined : parseInt(value))}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Habitaciones" />
+                <SelectTrigger className="h-12 w-32 bg-white border-gray-300 text-sm font-medium">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="any">Cualquiera</SelectItem>
-                  <SelectItem value="1">1+</SelectItem>
-                  <SelectItem value="2">2+</SelectItem>
-                  <SelectItem value="3">3+</SelectItem>
-                  <SelectItem value="4">4+</SelectItem>
-                  <SelectItem value="5">5+</SelectItem>
+                  <SelectItem value="sale">Comprar</SelectItem>
+                  <SelectItem value="rent">Alquilar</SelectItem>
                 </SelectContent>
               </Select>
 
-              <Input
-                type="number"
-                placeholder="Precio mínimo"
-                value={filters.minPrice || ''}
-                onChange={(e) => updateFilter('minPrice', e.target.value ? parseInt(e.target.value) : undefined)}
-                className="bg-background"
-              />
+              {/* Campo: Tipo de vivienda */}
+              <Select 
+                value={filters.property_type || 'all'} 
+                onValueChange={(value) => updateFilter('property_type', value === 'all' ? '' : value)}
+              >
+                <SelectTrigger className="h-12 w-36 bg-white border-gray-300 text-sm font-medium">
+                  <SelectValue placeholder="Viviendas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Viviendas</SelectItem>
+                  <SelectItem value="Apartamento">Apartamento</SelectItem>
+                  <SelectItem value="Casa">Casa</SelectItem>
+                  <SelectItem value="Ático">Ático</SelectItem>
+                  <SelectItem value="Dúplex">Dúplex</SelectItem>
+                  <SelectItem value="Estudio">Estudio</SelectItem>
+                </SelectContent>
+              </Select>
 
-              <Input
-                type="number"
-                placeholder="Precio máximo"
-                value={filters.maxPrice || ''}
-                onChange={(e) => updateFilter('maxPrice', e.target.value ? parseInt(e.target.value) : undefined)}
-                className="bg-background"
-              />
+              {/* Campo: Ubicación (barra de búsqueda principal) */}
+              <div className="flex-1 relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="¿Dónde quieres vivir?"
+                  value={filters.query}
+                  onChange={(e) => updateFilter('query', e.target.value)}
+                  className="h-12 pl-12 pr-4 text-base border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
 
-              <Input
-                type="text"
-                placeholder="Ciudad"
-                value={filters.city}
-                onChange={(e) => updateFilter('city', e.target.value)}
-                className="bg-background"
-              />
+              {/* Campo: Precio máximo */}
+              <Select 
+                value={filters.maxPrice?.toString() || 'any'} 
+                onValueChange={(value) => updateFilter('maxPrice', value === 'any' ? undefined : parseInt(value))}
+              >
+                <SelectTrigger className="h-12 w-40 bg-white border-gray-300 text-sm font-medium">
+                  <SelectValue placeholder="Precio máximo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Sin límite</SelectItem>
+                  <SelectItem value="100000">100.000€</SelectItem>
+                  <SelectItem value="200000">200.000€</SelectItem>
+                  <SelectItem value="300000">300.000€</SelectItem>
+                  <SelectItem value="500000">500.000€</SelectItem>
+                  <SelectItem value="1000000">1.000.000€</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Botón de búsqueda */}
+              <Button 
+                onClick={handleSearch}
+                className="h-12 bg-blue-600 hover:bg-blue-700 text-white px-8 rounded-lg font-medium text-base"
+              >
+                Buscar
+              </Button>
             </div>
-          )}
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

@@ -21,8 +21,13 @@ import {
   Eraser,
   Save,
   Loader2,
-  MousePointer
+  MousePointer,
+  Square as SquareIcon,
+  Circle,
+  Move,
+  Trash2
 } from 'lucide-react';
+import { FloatingDrawingTools } from './FloatingDrawingTools';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import 'leaflet/dist/leaflet.css';
@@ -41,14 +46,14 @@ interface Property {
   id: string;
   title: string;
   price: number;
+  category: 'sale' | 'rent';
   property_type: string;
-  category: string;
-  city: string;
-  latitude: number;
-  longitude: number;
   bedrooms: number;
   bathrooms: number;
   area: number;
+  city: string;
+  latitude: number;
+  longitude: number;
   images: string[];
 }
 
@@ -56,23 +61,27 @@ interface MapSearchProps {
   user?: any;
 }
 
-// Componente para manejar el centro del mapa
 function MapCenter({ center }: { center: [number, number] }) {
   const map = useMap();
+  
   useEffect(() => {
-    map.setView(center);
+    map.setView(center, map.getZoom());
   }, [center, map]);
+  
   return null;
 }
 
-// Componente para las herramientas de dibujo
-function DrawingTools({ onDrawCreated, onDrawEdited, onDrawDeleted }: {
+// Componente simplificado para las herramientas de dibujo
+function SimpleDrawingTools({ onDrawCreated, onDrawEdited, onDrawDeleted, drawingMode, setDrawingMode }: {
   onDrawCreated: (e: any) => void;
   onDrawEdited: (e: any) => void;
   onDrawDeleted: (e: any) => void;
+  drawingMode: boolean;
+  setDrawingMode: (mode: boolean) => void;
 }) {
   const map = useMap();
   const featureGroupRef = useRef<L.FeatureGroup>(null);
+  const [currentTool, setCurrentTool] = useState<'rectangle' | 'polygon' | 'circle' | null>(null);
 
   useEffect(() => {
     if (!featureGroupRef.current) {
@@ -81,43 +90,92 @@ function DrawingTools({ onDrawCreated, onDrawEdited, onDrawDeleted }: {
     }
   }, [map]);
 
+  const activateTool = (tool: 'rectangle' | 'polygon' | 'circle') => {
+    setCurrentTool(tool);
+    setDrawingMode(true);
+    
+    // Limpiar herramientas anteriores
+    if (featureGroupRef.current) {
+      featureGroupRef.current.clearLayers();
+    }
+    
+    // Crear nueva herramienta de dibujo
+    const drawControl = new (L as any).Control.Draw({
+      position: 'topright',
+      draw: {
+        rectangle: tool === 'rectangle' ? {
+          shapeOptions: {
+            color: '#3b82f6',
+            weight: 3,
+            fillOpacity: 0.2
+          }
+        } : false,
+        polygon: tool === 'polygon' ? {
+          shapeOptions: {
+            color: '#3b82f6',
+            weight: 3,
+            fillOpacity: 0.2
+          }
+        } : false,
+        circle: tool === 'circle' ? {
+          shapeOptions: {
+            color: '#3b82f6',
+            weight: 3,
+            fillOpacity: 0.2
+          }
+        } : false,
+        marker: false,
+        polyline: false,
+        circlemarker: false
+      },
+      edit: {
+        featureGroup: featureGroupRef.current,
+        remove: true
+      }
+    });
+
+    map.addControl(drawControl);
+
+    // Eventos
+    map.on('draw:created', onDrawCreated);
+    map.on('draw:edited', onDrawEdited);
+    map.on('draw:deleted', onDrawDeleted);
+
+    // Limpiar control después de dibujar
+    const cleanup = () => {
+      map.removeControl(drawControl);
+      map.off('draw:created', onDrawCreated);
+      map.off('draw:edited', onDrawEdited);
+      map.off('draw:deleted', onDrawDeleted);
+      setCurrentTool(null);
+      setDrawingMode(false);
+    };
+
+    // Auto-cleanup después de dibujar
+    const handleCreated = (e: any) => {
+      onDrawCreated(e);
+      cleanup();
+    };
+
+    map.on('draw:created', handleCreated);
+
+    return () => {
+      cleanup();
+    };
+  };
+
+  const clearDrawing = () => {
+    if (featureGroupRef.current) {
+      featureGroupRef.current.clearLayers();
+    }
+    setCurrentTool(null);
+    setDrawingMode(false);
+    onDrawDeleted({});
+  };
+
   return (
     <FeatureGroup ref={featureGroupRef}>
-      <EditControl
-        position="topright"
-        onCreated={onDrawCreated}
-        onEdited={onDrawEdited}
-        onDeleted={onDrawDeleted}
-        draw={{
-          rectangle: {
-            shapeOptions: {
-              color: '#3b82f6',
-              weight: 2,
-              fillOpacity: 0.2
-            }
-          },
-          polygon: {
-            shapeOptions: {
-              color: '#3b82f6',
-              weight: 2,
-              fillOpacity: 0.2
-            }
-          },
-          circle: {
-            shapeOptions: {
-              color: '#3b82f6',
-              weight: 2,
-              fillOpacity: 0.2
-            }
-          },
-          marker: false,
-          polyline: false,
-          circlemarker: false
-        }}
-                 edit={{
-           remove: true
-         }}
-      />
+      {/* No renderizamos EditControl aquí, lo manejamos manualmente */}
     </FeatureGroup>
   );
 }
@@ -162,168 +220,75 @@ export function PropertyMap({ user }: MapSearchProps) {
       const { data, error } = await supabase
         .from('properties')
         .select('*')
-        .eq('is_active', true);
+        .eq('status', 'active');
 
-      if (error) {
-        console.error('Error loading properties:', error);
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar las propiedades",
-          variant: "destructive"
-        });
-      } else {
-        // Mapear los datos para que coincidan con la interfaz Property
-        const mappedData = (data || []).map(prop => ({
-          id: prop.id,
-          title: prop.title,
-          price: prop.price,
-          property_type: prop.property_type,
-          category: prop.category,
-          city: prop.city,
-          latitude: prop.latitude || 0,
-          longitude: prop.longitude || 0,
-          bedrooms: prop.bedrooms,
-          bathrooms: prop.bathrooms,
-          area: prop.area_m2 || 0,
-          images: Array.isArray(prop.images) ? prop.images : []
-        })) as Property[];
-        setProperties(mappedData);
-      }
+      if (error) throw error;
+
+      setProperties(data || []);
+      setFilteredProperties(data || []);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error cargando propiedades:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las propiedades",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const filterProperties = () => {
-    let filtered = properties;
-
-    // Filtrar por área dibujada
-    if (drawnArea && drawnArea.geometry) {
-      console.log('Filtrando por área dibujada:', drawnArea);
-      filtered = filtered.filter(property => {
-        // Verificar que la propiedad tenga coordenadas válidas
-        if (!property.latitude || !property.longitude) {
-          console.log('Propiedad sin coordenadas válidas:', property.title);
-          return false;
-        }
-
-        // Manejar diferentes tipos de geometría
-        if (drawnArea.geometry.type === 'Polygon') {
-          const isInside = isPointInPolygon(
-            property.longitude,
-            property.latitude,
-            drawnArea.geometry.coordinates[0]
-          );
-          console.log(`Propiedad ${property.title}: ${isInside ? 'DENTRO' : 'FUERA'} del polígono`);
-          return isInside;
-        } else if (drawnArea.geometry.type === 'Point' && drawnArea.properties?.radius) {
-          // Para círculos
-          const center = drawnArea.geometry.coordinates;
-          const distance = calculateDistance(
-            center[1], // lat
-            center[0], // lng
-            property.latitude,
-            property.longitude
-          );
-          const radius = drawnArea.properties.radius; // radio en metros
-          const isInside = distance <= radius;
-          console.log(`Propiedad ${property.title}: distancia ${distance}m, radio ${radius}m, ${isInside ? 'DENTRO' : 'FUERA'} del círculo`);
-          return isInside;
-        }
-        
+    let filtered = properties.filter(property => {
+      // Filtro por precio
+      if (property.price < filters.priceMin || property.price > filters.priceMax) {
         return false;
-      });
-    }
-
-    // Filtrar por precio
-    filtered = filtered.filter(property => 
-      property.price >= filters.priceMin && property.price <= filters.priceMax
-    );
-
-    // Filtrar por tipo de propiedad
-    if (filters.propertyType !== 'all') {
-      filtered = filtered.filter(property => 
-        property.property_type === filters.propertyType
-      );
-    }
-
-    // Filtrar por categoría
-    if (filters.category !== 'all') {
-      filtered = filtered.filter(property => 
-        property.category === filters.category
-      );
-    }
-
-    // Filtrar por habitaciones
-    if (filters.bedrooms !== 'any') {
-      const bedrooms = parseInt(filters.bedrooms);
-      filtered = filtered.filter(property => 
-        property.bedrooms >= bedrooms
-      );
-    }
-
-    console.log(`Filtrado completado: ${filtered.length} propiedades de ${properties.length} totales`);
-    setFilteredProperties(filtered);
-  };
-
-  // Función para verificar si un punto está dentro de un polígono
-  const isPointInPolygon = (lon: number, lat: number, polygon: number[][]) => {
-    let inside = false;
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      const xi = polygon[i][0], yi = polygon[i][1];
-      const xj = polygon[j][0], yj = polygon[j][1];
-      
-      if (((yi > lat) !== (yj > lat)) && (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi)) {
-        inside = !inside;
       }
-    }
-    return inside;
-  };
 
-  // Función para calcular distancia entre dos puntos (fórmula de Haversine)
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371e3; // Radio de la Tierra en metros
-    const φ1 = lat1 * Math.PI / 180;
-    const φ2 = lat2 * Math.PI / 180;
-    const Δφ = (lat2 - lat1) * Math.PI / 180;
-    const Δλ = (lon2 - lon1) * Math.PI / 180;
+      // Filtro por tipo de propiedad
+      if (filters.propertyType !== 'all' && property.property_type !== filters.propertyType) {
+        return false;
+      }
 
-    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      // Filtro por categoría
+      if (filters.category !== 'all' && property.category !== filters.category) {
+        return false;
+      }
 
-    return R * c;
-  };
+      // Filtro por habitaciones
+      if (filters.bedrooms !== 'any' && property.bedrooms < parseInt(filters.bedrooms)) {
+        return false;
+      }
 
-  const toggleDrawingMode = () => {
-    const newDrawingMode = !drawingMode;
-    setDrawingMode(newDrawingMode);
-    
-    // Toast más sutil para evitar desplazamientos
-    if (newDrawingMode) {
-      toast({
-        title: "Modo dibujo activado",
-        description: "Herramientas disponibles en la esquina superior derecha",
-        duration: 2000,
-      });
-    } else {
-      toast({
-        title: "Modo dibujo desactivado",
-        duration: 1500,
-      });
-    }
-  };
+      // Filtro por área dibujada
+      if (drawnArea) {
+        try {
+          const point = L.latLng(property.latitude, property.longitude);
+          
+          if (drawnArea.geometry.type === 'Point') {
+            // Para círculos
+            const center = L.latLng(drawnArea.geometry.coordinates[1], drawnArea.geometry.coordinates[0]);
+            const radius = drawnArea.properties.radius;
+            const distance = center.distanceTo(point);
+            if (distance > radius) {
+              return false;
+            }
+          } else if (drawnArea.geometry.type === 'Polygon') {
+            // Para polígonos y rectángulos
+            const polygon = L.polygon(drawnArea.geometry.coordinates[0].map((coord: number[]) => [coord[1], coord[0]]));
+            if (!polygon.getBounds().contains(point)) {
+              return false;
+            }
+          }
+        } catch (error) {
+          console.error('Error al filtrar por área:', error);
+        }
+      }
 
-  const clearDrawnArea = () => {
-    setDrawnArea(null);
-    setDrawingMode(false);
-    toast({
-      title: "Zona limpiada",
-      description: "Se ha limpiado la zona dibujada",
+      return true;
     });
+
+    setFilteredProperties(filtered);
   };
 
   const handleDrawCreated = (e: any) => {
@@ -391,8 +356,7 @@ export function PropertyMap({ user }: MapSearchProps) {
   };
 
   const handleDrawEdited = (e: any) => {
-    const layers = e.layers;
-    layers.eachLayer((layer: any) => {
+    e.layers.eachLayer((layer: any) => {
       const coordinates = layer.getLatLngs ? layer.getLatLngs() : [layer.getLatLng()];
       const geoJson = {
         type: "Feature",
@@ -439,40 +403,14 @@ export function PropertyMap({ user }: MapSearchProps) {
             </Button>
           </div>
 
-          {/* Herramientas de dibujo */}
-          <div className="flex gap-2 mb-4">
-            <Button
-              variant={drawingMode ? "default" : "outline"}
-              size="sm"
-              onClick={toggleDrawingMode}
-            >
-              <MousePointer className="h-4 w-4 mr-2" />
-              {drawingMode ? "Dibujando..." : "Dibujar zona"}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={clearDrawnArea}
-            >
-              <Eraser className="h-4 w-4 mr-2" />
-              Limpiar
-            </Button>
+                    {/* Información sobre herramientas de dibujo */}
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>💡 Tip:</strong> Usa el botón flotante en la esquina superior derecha del mapa para dibujar zonas de búsqueda.
+            </p>
           </div>
 
-          {/* Instrucciones de dibujo */}
-          {drawingMode && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Instrucciones:</strong> Usa las herramientas en la esquina superior derecha del mapa:
-              </p>
-              <ul className="text-xs text-blue-700 mt-1 space-y-1">
-                <li>• <strong>Rectángulo:</strong> Dibuja un área rectangular</li>
-                <li>• <strong>Polígono:</strong> Dibuja un área personalizada</li>
-                <li>• <strong>Círculo:</strong> Dibuja un área circular</li>
-                <li>• <strong>Editar/Eliminar:</strong> Modifica o elimina zonas</li>
-              </ul>
-            </div>
-          )}
+
 
           {/* Filtros */}
           {showFilters && (
@@ -603,22 +541,24 @@ export function PropertyMap({ user }: MapSearchProps) {
           ) : (
             filteredProperties.map((property) => (
               <Card 
-                key={property.id}
-                className="cursor-pointer hover:shadow-md transition-shadow"
+                key={property.id} 
+                className={`cursor-pointer transition-all hover:shadow-md ${
+                  selectedProperty?.id === property.id ? 'ring-2 ring-primary' : ''
+                }`}
                 onClick={() => setSelectedProperty(property)}
               >
                 <CardContent className="p-4">
                   <div className="flex gap-3">
                     {/* Imagen */}
-                    <div className="w-20 h-20 bg-muted rounded-lg flex-shrink-0">
-                      {property.images && property.images[0] ? (
-                        <img
-                          src={property.images[0]}
+                    <div className="w-20 h-20 bg-muted rounded-lg flex-shrink-0 overflow-hidden">
+                      {property.images && property.images.length > 0 ? (
+                        <img 
+                          src={property.images[0]} 
                           alt={property.title}
-                          className="w-full h-full object-cover rounded-lg"
+                          className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center">
+                        <div className="w-full h-full bg-muted flex items-center justify-center">
                           <Home className="h-6 w-6 text-muted-foreground" />
                         </div>
                       )}
@@ -706,17 +646,77 @@ export function PropertyMap({ user }: MapSearchProps) {
             </Marker>
           ))}
           
-          {/* Herramientas de dibujo */}
-          {drawingMode && (
-            <DrawingTools
-              onDrawCreated={handleDrawCreated}
-              onDrawEdited={handleDrawEdited}
-              onDrawDeleted={handleDrawDeleted}
-            />
-          )}
-          
           <MapCenter center={mapCenter} />
         </MapContainer>
+
+        {/* Herramientas de dibujo flotantes */}
+        <FloatingDrawingTools
+          onToolSelect={(tool) => {
+            if (mapRef.current) {
+              const drawControl = new (L as any).Control.Draw({
+                position: 'topright',
+                draw: {
+                  rectangle: tool === 'rectangle' ? {
+                    shapeOptions: {
+                      color: '#3b82f6',
+                      weight: 3,
+                      fillOpacity: 0.2
+                    }
+                  } : false,
+                  polygon: tool === 'polygon' ? {
+                    shapeOptions: {
+                      color: '#3b82f6',
+                      weight: 3,
+                      fillOpacity: 0.2
+                    }
+                  } : false,
+                  circle: tool === 'circle' ? {
+                    shapeOptions: {
+                      color: '#3b82f6',
+                      weight: 3,
+                      fillOpacity: 0.2
+                    }
+                  } : false,
+                  marker: false,
+                  polyline: false,
+                  circlemarker: false
+                },
+                edit: false
+              });
+              
+              mapRef.current.addControl(drawControl);
+              mapRef.current.on('draw:created', handleDrawCreated);
+              setDrawingMode(true);
+              
+              // Auto-remove después de dibujar
+              const cleanup = () => {
+                mapRef.current?.removeControl(drawControl);
+                mapRef.current?.off('draw:created', handleDrawCreated);
+                setDrawingMode(false);
+              };
+              
+              mapRef.current.on('draw:created', cleanup);
+            }
+          }}
+          onClear={() => {
+            setDrawnArea(null);
+            if (mapRef.current) {
+              // Limpiar todos los controles de dibujo
+              mapRef.current.eachLayer((layer) => {
+                if (layer instanceof L.FeatureGroup) {
+                  layer.clearLayers();
+                }
+              });
+            }
+            toast({
+              title: "Zona eliminada",
+              description: "Se ha eliminado la zona dibujada",
+            });
+          }}
+          isDrawing={drawingMode}
+          hasDrawnArea={!!drawnArea}
+          onClose={() => setDrawingMode(false)}
+        />
       </div>
     </div>
   );

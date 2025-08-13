@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/navigation-menu';
 import { 
   User, LogOut, Building2, Heart, MessageSquare, 
-  Bell, ChevronDown, Search, MapPin, Menu
+  Bell, ChevronDown, Search, MapPin, Menu, Crown
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/use-profile';
@@ -542,6 +542,12 @@ export function Navbar({ user }: NavbarProps) {
                       <Link to="/profile?tab=properties" className="flex items-center">
                         <Building2 className="h-4 w-4 mr-2" />
                         Mis Propiedades
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/subscription" className="flex items-center">
+                        <Crown className="h-4 w-4 mr-2" />
+                        Planes y Suscripciones
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />

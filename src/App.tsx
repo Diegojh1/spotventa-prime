@@ -17,6 +17,7 @@ import { PublishProperty } from "./pages/PublishProperty";
 import { EditProperty } from "./pages/EditProperty";
 import { Auth } from "./pages/Auth";
 import { MapSearch } from "./pages/MapSearch";
+import { Subscription } from "./pages/Subscription";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +78,7 @@ const App = () => {
                 <Route path="/edit-property/:id" element={<EditProperty user={user} />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/map" element={<MapSearch user={user} />} />
+                <Route path="/subscription" element={<Subscription user={user} />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>

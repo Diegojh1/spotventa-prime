@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Upload, Save, X, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useSubscription } from '@/hooks/use-subscription';
 
 interface PropertyFormProps {
   user: User;
@@ -43,6 +44,7 @@ interface PropertyData {
 
 export function PropertyForm({ user, onSuccess, onCancel }: PropertyFormProps) {
   const { toast } = useToast();
+  const { incrementPublishedProperties } = useSubscription(user.id);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -200,6 +202,14 @@ export function PropertyForm({ user, onSuccess, onCancel }: PropertyFormProps) {
       if (error) {
         console.error('Error en inserción:', error);
         throw error;
+      }
+
+      // Incrementar contador de propiedades publicadas
+      try {
+        await incrementPublishedProperties();
+      } catch (error) {
+        console.error('Error incrementing property count:', error);
+        // No fallar la publicación si hay error en el contador
       }
 
       toast({

@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import SearchBar from '@/components/search/SearchBar';
 import { 
   Search, MapPin, Building2, ChevronDown, Smartphone, TrendingUp, ArrowRight, Star, Shield, Zap,
   Clock, Eye
@@ -33,10 +34,7 @@ export function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Estado para la barra de búsqueda
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchCategory, setSearchCategory] = useState<'sale' | 'rent'>('sale');
-  const [propertyType, setPropertyType] = useState('all');
+  // Estado para la barra de búsqueda (ya no necesario con el nuevo SearchBar)
 
   useEffect(() => {
     // Obtener el usuario actual
@@ -108,31 +106,7 @@ export function Home() {
     return () => clearInterval(interval);
   }, [user]);
 
-  // Función para manejar la búsqueda
-  const handleSearch = () => {
-    const params = new URLSearchParams();
-    
-    if (searchQuery.trim()) {
-      params.set('q', searchQuery.trim());
-    }
-    
-    if (searchCategory) {
-      params.set('category', searchCategory);
-    }
-    
-    if (propertyType && propertyType !== 'all') {
-      params.set('property_type', propertyType);
-    }
-    
-    navigate(`/search?${params.toString()}`);
-  };
 
-  // Función para manejar la tecla Enter en el input
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -146,90 +120,13 @@ export function Home() {
         {/* Content */}
         <div className="relative z-10 max-w-7xl mx-auto px-4 py-16">
           <div className="text-center space-y-8">
-            {/* Main Title */}
-            <h1 className="text-4xl md:text-6xl font-bold text-white">
+                        {/* Main Title */}
+            <h1 className="text-4xl md:text-6xl font-bold text-white mb-8">
               Haz caso a tu intuición
             </h1>
             
-                         {/* Search Bar - Green Box */}
-             <div className="max-w-5xl mx-auto">
-               <div className="bg-lime-400 p-6 shadow-xl rounded-2xl">
-                 <div className="flex items-center gap-4">
-                   {/* Action Tabs */}
-                   <div className="flex gap-2">
-                     <Button 
-                       className={`border-0 px-6 py-3 rounded-xl font-medium transition-all ${
-                         searchCategory === 'sale' 
-                           ? 'bg-pink-500 hover:bg-pink-600 text-white' 
-                           : 'bg-white hover:bg-gray-50 text-black'
-                       }`}
-                       onClick={() => setSearchCategory('sale')}
-                     >
-                       Comprar
-                     </Button>
-                     <Button 
-                       className={`border-0 px-6 py-3 rounded-xl font-medium transition-all ${
-                         searchCategory === 'rent' 
-                           ? 'bg-pink-500 hover:bg-pink-600 text-white' 
-                           : 'bg-white hover:bg-gray-50 text-black'
-                       }`}
-                       onClick={() => setSearchCategory('rent')}
-                     >
-                       Alquilar
-                     </Button>
-                     <Button 
-                       variant="outline" 
-                       className="bg-white hover:bg-gray-50 text-black border-0 px-6 py-3 rounded-xl font-medium"
-                       onClick={() => navigate('/publish')}
-                     >
-                       Compartir
-                     </Button>
-                   </div>
-
-                   {/* Property Type Dropdown */}
-                   <div className="relative">
-                     <select
-                       value={propertyType}
-                       onChange={(e) => setPropertyType(e.target.value)}
-                       className="bg-white hover:bg-gray-50 text-black border-0 px-4 py-3 min-w-[120px] rounded-xl font-medium appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500"
-                     >
-                       <option value="all">Viviendas</option>
-                       <option value="Apartamento">Apartamento</option>
-                       <option value="Casa">Casa</option>
-                       <option value="Ático">Ático</option>
-                       <option value="Estudio">Estudio</option>
-                       <option value="Dúplex">Dúplex</option>
-                       <option value="Chalet">Chalet</option>
-                       <option value="Casa adosada">Casa adosada</option>
-                       <option value="Casa independiente">Casa independiente</option>
-                       <option value="Loft">Loft</option>
-                     </select>
-                     <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 pointer-events-none text-gray-500" />
-                   </div>
-
-                   {/* Search Input */}
-                   <div className="flex-1 relative">
-                     <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                     <input
-                       type="text"
-                       placeholder="Escribe dónde buscas"
-                       value={searchQuery}
-                       onChange={(e) => setSearchQuery(e.target.value)}
-                       onKeyPress={handleKeyPress}
-                       className="w-full pl-12 pr-4 py-4 text-lg border-0 outline-none bg-white rounded-xl shadow-sm focus:shadow-md transition-shadow"
-                     />
-                   </div>
-
-                   {/* Search Button */}
-                   <Button 
-                     className="bg-purple-600 hover:bg-purple-700 text-white border-0 px-8 py-4 rounded-xl font-medium text-lg shadow-lg hover:shadow-xl transition-all"
-                     onClick={handleSearch}
-                   >
-                     Buscar
-                   </Button>
-                 </div>
-               </div>
-             </div>
+            {/* Nueva barra de búsqueda expandible */}
+            <SearchBar variant="hero" />
           </div>
         </div>
       </div>

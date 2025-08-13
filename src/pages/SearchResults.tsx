@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { SearchBar } from '@/components/search/SearchBar';
+import SearchBar from '@/components/search/SearchBar';
 import { PropertyCard } from '@/components/property/PropertyCard';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
