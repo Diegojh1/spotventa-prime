@@ -511,6 +511,17 @@ app.post('/api/billing/portal', async (req, res) => {
   }
 });
 
+// 🚨 DEBUG ENDPOINT TEMPORAL
+app.get('/api/debug/urls', (req, res) => {
+  res.json({
+    CORS_ORIGIN: process.env.CORS_ORIGIN,
+    success_url_would_be: `https://mediumspringgreen-hedgehog-499128.hostingersite.com/success`,
+    cancel_url_would_be: `https://mediumspringgreen-hedgehog-499128.hostingersite.com/cancel`,
+    return_url_would_be: `https://mediumspringgreen-hedgehog-499128.hostingersite.com/profile?tab=billing`,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Función auxiliar para obtener precios (para referencia)
 function getPlanPrice(planId, billingCycle = 'monthly') {
   const prices = {
