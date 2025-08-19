@@ -121,8 +121,8 @@ app.post('/api/subscriptions/create', async (req, res) => {
         price: stripeProduct.price_monthly,
         quantity: 1,
       }],
-      success_url: `${process.env.CORS_ORIGIN || 'http://localhost:8081'}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CORS_ORIGIN || 'http://localhost:8081'}/cancel`,
+      success_url: `https://mediumspringgreen-hedgehog-499128.hostingersite.com/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `https://mediumspringgreen-hedgehog-499128.hostingersite.com/cancel`,
       metadata: {
         userId: userId.toString(),
         planId: planId,
@@ -492,7 +492,7 @@ app.post('/api/billing/portal', async (req, res) => {
     // 3️⃣ Crear sesión del portal
     const session = await stripe.billingPortal.sessions.create({
       customer: customers.data[0].id,
-      return_url: `${process.env.CORS_ORIGIN}/profile?tab=billing`,
+      return_url: `https://mediumspringgreen-hedgehog-499128.hostingersite.com/profile?tab=billing`,
     });
 
     console.log('✅ Sesión de Customer Portal creada:', session.id);
