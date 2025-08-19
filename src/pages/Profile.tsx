@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { 
   User, Edit, Building2, Heart, MessageSquare, 
   Bell, BarChart3, Activity, Settings, LogOut,
-  Eye, TrendingUp, Users, Calendar, Phone, Mail
+  Eye, TrendingUp, Users, Calendar, Phone, Mail, CreditCard
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -19,6 +19,7 @@ import { PropertyStatistics } from '@/components/property/PropertyStatistics';
 import { DirectChat } from '@/components/property/DirectChat';
 import { CommentReplies } from '@/components/property/CommentReplies';
 import { EditProfileModal } from '@/components/profile/EditProfileModal';
+import { BillingDashboard } from '@/components/billing/BillingDashboard';
 
 type Property = {
   id: string;
@@ -348,7 +349,7 @@ export function Profile({ user }: ProfileProps) {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             Perfil
@@ -368,6 +369,10 @@ export function Profile({ user }: ProfileProps) {
           <TabsTrigger value="properties" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
             Mis Propiedades
+          </TabsTrigger>
+          <TabsTrigger value="billing" className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            Facturación
           </TabsTrigger>
         </TabsList>
 
@@ -736,8 +741,13 @@ export function Profile({ user }: ProfileProps) {
               )}
             </CardContent>
           </Card>
-                 </TabsContent>
-       </Tabs>
+        </TabsContent>
+
+        {/* 💳 Billing Tab */}
+        <TabsContent value="billing" className="space-y-6">
+          <BillingDashboard userId={user?.id} />
+        </TabsContent>
+      </Tabs>
 
        {/* Edit Profile Modal */}
        <EditProfileModal

@@ -18,7 +18,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { SubscriptionPlan } from '@/types/subscription';
-import { getStripe, simulatePayment } from '@/services/payment';
+import { getStripe, createSubscription } from '@/services/payment';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -98,64 +98,36 @@ export function CheckoutModal({
     setError(null);
 
     try {
-      // Simular pago (en producción usarías Stripe real)
-      const subscription = await simulatePayment(
-        plan.id,
-        billingCycle,
-        user.id
-      );
+      // Crear suscripción real usando el backend de Stripe
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/subscriptions/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          planId: plan.id === 'prod_SsEOqC4TlzYtTB' ? 'professional' : 'premium',
+          userId: user.id,
+          customerEmail: user.email,
+          customerName: user.full_name || 'Usuario'
+        }),
+      });
 
-      // Guardar suscripción en Supabase
-      const { error: subError } = await supabase
-        .from('user_subscriptions')
-        .insert({
-          user_id: user.id,
-          plan_id: plan.id,
-          status: 'active',
-          billing_cycle: billingCycle,
-          current_period_start: new Date().toISOString(),
-          current_period_end: subscription.currentPeriodEnd,
-          stripe_subscription_id: subscription.subscriptionId,
-          stripe_customer_id: subscription.customerId,
-        });
-
-      if (subError) {
-        console.error('Error saving subscription:', subError);
-        // No fallar si hay error al guardar, el pago ya se procesó
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al procesar el pago');
       }
 
-      // Guardar método de pago
-      const { error: paymentError } = await supabase
-        .from('payment_methods')
-        .insert({
-          user_id: user.id,
-          stripe_payment_method_id: `pm_${Date.now()}`,
-          type: 'card',
-          last4: cardNumber.slice(-4),
-          brand: 'visa', // En producción esto vendría de Stripe
-          is_default: true,
-        });
-
-      if (paymentError) {
-        console.error('Error saving payment method:', paymentError);
+      const data = await response.json();
+      
+      // Redirigir a Stripe Checkout
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+        return; // No continuar con el resto del código local
+      } else {
+        throw new Error('No se recibió URL de checkout');
       }
 
-      // Registrar facturación
-      const { error: billingError } = await supabase
-        .from('billing_history')
-        .insert({
-          user_id: user.id,
-          subscription_id: subscription.subscriptionId,
-          amount: getPrice() * 100, // Stripe usa centavos
-          currency: 'eur',
-          status: 'succeeded',
-          stripe_invoice_id: `in_${Date.now()}`,
-          description: `Suscripción ${plan.name} - ${billingCycle}`,
-        });
 
-      if (billingError) {
-        console.error('Error saving billing history:', billingError);
-      }
 
       toast({
         title: "¡Pago exitoso!",

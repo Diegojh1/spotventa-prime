@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { SubscriptionPlans } from '@/components/subscription/SubscriptionPlans';
-import { CheckoutModal } from '@/components/subscription/CheckoutModal';
+
 import { useSubscription } from '@/hooks/use-subscription';
 import { SubscriptionPlan } from '@/types/subscription';
 
@@ -13,18 +13,44 @@ interface SubscriptionProps {
 export function Subscription({ user }: SubscriptionProps) {
   const navigate = useNavigate();
   const { subscriptionStatus, loading } = useSubscription(user?.id);
-  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
-  const [showCheckout, setShowCheckout] = useState(false);
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
-  const handlePlanSelect = (plan: SubscriptionPlan) => {
-    setSelectedPlan(plan);
+
+  const handlePlanSelect = async (plan: SubscriptionPlan) => {
     if (plan.price_monthly === 0) {
       // Free plan - activate immediately
       handleFreePlanActivation(plan);
     } else {
-      // Paid plan - show checkout
-      setShowCheckout(true);
+      // Paid plan - go directly to Stripe Checkout
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/subscriptions/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            planId: plan.id === 'prod_SsEOqC4TlzYtTB' ? 'professional' : 'premium',
+            userId: user?.id
+            // 🔒 Ya no enviamos email ni nombre - el backend los obtiene de la BD
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Error al procesar el pago');
+        }
+
+        const data = await response.json();
+        
+        // Redirect to Stripe Checkout
+        if (data.checkout_url) {
+          window.location.href = data.checkout_url;
+        } else {
+          throw new Error('No se recibió URL de checkout');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error al procesar la suscripción: ' + error.message);
+      }
     }
   };
 
@@ -35,11 +61,7 @@ export function Subscription({ user }: SubscriptionProps) {
     navigate('/profile');
   };
 
-  const handleCheckoutSuccess = () => {
-    // Handle successful payment
-    console.log('Payment successful for plan:', selectedPlan?.name);
-    navigate('/profile');
-  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -89,14 +111,7 @@ export function Subscription({ user }: SubscriptionProps) {
         </div>
       </div>
 
-      {/* Checkout Modal */}
-      <CheckoutModal
-        isOpen={showCheckout}
-        onClose={() => setShowCheckout(false)}
-        plan={selectedPlan}
-        billingCycle={billingCycle}
-        onSuccess={handleCheckoutSuccess}
-      />
+
     </div>
   );
 }
