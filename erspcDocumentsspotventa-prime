@@ -1,0 +1,10 @@
+* [33m11a547c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Configuración basica de Stripe
+* [33m5ea762e[m stripe
+* [33mac68174[m update: barra de busqueda hero
+* [33mf844e98[m Fix FTP deploy directory
+* [33me7ba979[m Fix FTP deploy path
+* [33m36800dd[m Add GitHub Actions deploy workflow
+* [33m83a640c[m clear
+* [33m5dde8ba[m first commit
+* [33m6441131[m Reverted to commit 9df2a52754b31cefa90dadac09f3e3b88a5f74c1
+* [33me2241fd[m Fix database constraints
