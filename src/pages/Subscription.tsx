@@ -22,7 +22,7 @@ export function Subscription({ user }: SubscriptionProps) {
     } else {
       // Paid plan - go directly to Stripe Checkout
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/subscriptions/create`, {
+        const response = await fetch(`https://spotventa-prime-production.up.railway.app/api/subscriptions/create`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
