@@ -99,7 +99,7 @@ export function CheckoutModal({
 
     try {
       // Crear suscripción real usando el backend de Stripe
-      const response = await fetch(`https://spotventa-prime-production.up.railway.app/api/subscriptions/create`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/subscriptions/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

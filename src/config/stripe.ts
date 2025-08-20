@@ -4,7 +4,7 @@ export const STRIPE_CONFIG = {
   publishableKey: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_...',
   
   // URL del backend para procesar pagos
-  apiUrl: 'https://spotventa-prime-production.up.railway.app',
+  apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:3001',
   
   // Configuración de moneda
   currency: 'eur',

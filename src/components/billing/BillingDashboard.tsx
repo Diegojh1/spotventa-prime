@@ -130,7 +130,7 @@ export function BillingDashboard({ userId, className = '' }: BillingDashboardPro
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`https://spotventa-prime-production.up.railway.app/api/billing/dashboard/${userId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/billing/dashboard/${userId}`);
       
       if (!response.ok) {
         throw new Error('Error al cargar datos de facturación');
@@ -159,7 +159,7 @@ export function BillingDashboard({ userId, className = '' }: BillingDashboardPro
     try {
       setOpeningPortal(true);
 
-      const response = await fetch(`https://spotventa-prime-production.up.railway.app/api/billing/portal`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/billing/portal`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
